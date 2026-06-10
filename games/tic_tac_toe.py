@@ -1,5 +1,16 @@
 import streamlit as st
 import random
+from games.utils import get_player_profile, update_player_profile
+
+METADATA = {
+    "id": "tic_tac_toe",
+    "title": "🎮 Neon Tic-Tac-Toe",
+    "author": "Команда Hub",
+    "category": "Board",
+    "description": "Класична гра 'Хрестики-Нулики' проти розумного та непередбачуваного ШІ.",
+    "image": "assets/tic_tac_toe.jpg",
+    "tags": ["ШІ", "Настільна", "Ретро"]
+}
 
 def check_winner(board):
     # Check rows, columns, and diagonals
@@ -117,38 +128,41 @@ def run():
     st.title("🎮 Neon Tic-Tac-Toe")
     st.write("Play against the Neon AI! Can you beat it?")
     
+    # Load profile data
+    username = st.session_state.get("current_user", "Гість")
+    profile = get_player_profile(username)
+    
+    # Make sure we have the correct nested dict
+    if "tic_tac_toe" not in profile:
+        profile["tic_tac_toe"] = {"wins": 0, "losses": 0, "ties": 0}
+        
+    ttt_stats = profile["tic_tac_toe"]
+    
     # Initialize session state for Tic-Tac-Toe
     if "ttt_board" not in st.session_state:
         reset_game()
-    if "ttt_score" not in st.session_state:
-        st.session_state.ttt_score = {"Player": 0, "AI": 0, "Ties": 0}
         
     board = st.session_state.ttt_board
     winner = st.session_state.ttt_winner
     
-    # Display scores
+    # Display scores from profile
     col1, col2, col3 = st.columns(3)
-    col1.metric("Player (X)", st.session_state.ttt_score["Player"])
-    col2.metric("Neon AI (O)", st.session_state.ttt_score["AI"])
-    col3.metric("Ties", st.session_state.ttt_score["Ties"])
+    col1.metric("Ви перемог (X)", ttt_stats["wins"])
+    col2.metric("Neon AI (O)", ttt_stats["losses"])
+    col3.metric("Нічиї", ttt_stats["ties"])
     
     st.write("---")
     
     # Render the game grid
-    # We will use columns to render a 3x3 grid
     for row in range(3):
         cols = st.columns([1, 1, 1])
         for col in range(3):
             idx = row * 3 + col
             cell_value = board[idx]
             
-            # Label is space or X or O
             btn_label = cell_value if cell_value != "" else " "
-            
-            # Disable buttons if game is over or cell is filled
             is_disabled = (winner is not None) or (cell_value != "") or (st.session_state.ttt_turn == "AI")
             
-            # Unique key for each button
             if cols[col].button(btn_label, key=f"cell_{idx}", use_container_width=True, disabled=is_disabled):
                 # Player moves
                 board[idx] = "X"
@@ -157,11 +171,13 @@ def run():
                 if winner:
                     st.session_state.ttt_winner = winner
                     if winner == "X":
-                        st.session_state.ttt_score["Player"] += 1
+                        ttt_stats["wins"] += 1
                     elif winner == "Tie":
-                        st.session_state.ttt_score["Ties"] += 1
+                        ttt_stats["ties"] += 1
+                    
+                    profile["tic_tac_toe"] = ttt_stats
+                    update_player_profile(username, profile)
                 else:
-                    # Switch to AI turn
                     st.session_state.ttt_turn = "AI"
                 st.rerun()
 
@@ -174,9 +190,12 @@ def run():
         if winner:
             st.session_state.ttt_winner = winner
             if winner == "O":
-                st.session_state.ttt_score["AI"] += 1
+                ttt_stats["losses"] += 1
             elif winner == "Tie":
-                st.session_state.ttt_score["Ties"] += 1
+                ttt_stats["ties"] += 1
+            
+            profile["tic_tac_toe"] = ttt_stats
+            update_player_profile(username, profile)
         
         st.session_state.ttt_turn = "Player"
         st.rerun()
@@ -185,18 +204,19 @@ def run():
     if winner:
         st.write("---")
         if winner == "X":
-            st.success("🎉 You won! Congratulations!")
+            st.success("🎉 Ви перемогли! Вітаємо!")
         elif winner == "O":
-            st.error("💀 Neon AI won. Better luck next time!")
+            st.error("💀 ШІ Neon переміг. Спробуйте ще раз!")
         else:
-            st.info("🤝 It's a tie!")
+            st.info("🤝 Нічия!")
             
-        if st.button("Play Again", type="primary", use_container_width=True):
+        if st.button("Грати знову", type="primary", use_container_width=True):
             reset_game()
             st.rerun()
             
     # Reset Score button
-    if st.button("Reset Score Board", use_container_width=True):
-        st.session_state.ttt_score = {"Player": 0, "AI": 0, "Ties": 0}
+    if st.button("Скинути статистику", use_container_width=True):
+        profile["tic_tac_toe"] = {"wins": 0, "losses": 0, "ties": 0}
+        update_player_profile(username, profile)
         reset_game()
         st.rerun()

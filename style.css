@@ -563,3 +563,86 @@ div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] button[kind="pr
     border-left: 3px solid #f59e0b;
     border-radius: 4px;
 }
+
+/* --- Profile Card & Login Dialog Styles --- */
+.profile-card {
+    background: rgba(15, 23, 42, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(15px);
+    border-radius: 16px;
+    padding: 12px 18px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.profile-card:hover {
+    border-color: rgba(59, 130, 246, 0.2) !important;
+    box-shadow: 0 8px 30px rgba(59, 130, 246, 0.08);
+}
+
+.login-box {
+    background: rgba(15, 23, 42, 0.65) !important;
+    border: 1px solid rgba(59, 130, 246, 0.2) !important;
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(59, 130, 246, 0.1);
+    animation: slideUp 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* --- Broken Cards Warning --- */
+.broken-card {
+    border: 1px solid rgba(239, 68, 68, 0.2) !important;
+    background: rgba(239, 68, 68, 0.02) !important;
+}
+
+.broken-card:hover {
+    border-color: rgba(239, 68, 68, 0.5) !important;
+    box-shadow: 0 15px 40px rgba(239, 68, 68, 0.15) !important;
+}
+
+.broken-card .play-action {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #f87171 !important;
+    border-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+.broken-card:hover .play-action {
+    background: #ef4444 !important;
+    color: #06070d !important;
+    border-color: transparent !important;
+    box-shadow: 0 6px 15px rgba(239, 68, 68, 0.3) !important;
+}
+
+/* --- Sleek Leaderboard Tables --- */
+table {
+    margin-top: 10px;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+tr {
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+tr:hover {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+th {
+    letter-spacing: 1px;
+    font-weight: 600 !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+}
+
+td {
+    font-size: 0.95rem;
+    color: #e2e8f0;
+}
+
