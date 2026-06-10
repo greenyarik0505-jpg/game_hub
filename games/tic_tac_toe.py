@@ -1,0 +1,202 @@
+import streamlit as st
+import random
+
+def check_winner(board):
+    # Check rows, columns, and diagonals
+    lines = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],  # Rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],  # Columns
+        [0, 4, 8], [2, 4, 6]             # Diagonals
+    ]
+    for line in lines:
+        if board[line[0]] == board[line[1]] == board[line[2]] != "":
+            return board[line[0]]
+    if "" not in board:
+        return "Tie"
+    return None
+
+def get_ai_move(board):
+    # Try to win, then block player, then pick center, then random
+    empty_indices = [i for i, val in enumerate(board) if val == ""]
+    
+    # 1. Check if AI can win in the next move
+    for idx in empty_indices:
+        temp_board = list(board)
+        temp_board[idx] = "O"
+        if check_winner(temp_board) == "O":
+            return idx
+            
+    # 2. Check if Player can win and block them
+    for idx in empty_indices:
+        temp_board = list(board)
+        temp_board[idx] = "X"
+        if check_winner(temp_board) == "X":
+            return idx
+            
+    # 3. Take center if available
+    if 4 in empty_indices:
+        return 4
+        
+    # 4. Take corners if available
+    corners = [0, 2, 6, 8]
+    available_corners = [c for c in corners if c in empty_indices]
+    if available_corners:
+        return random.choice(available_corners)
+        
+    # 5. Take random
+    return random.choice(empty_indices)
+
+def reset_game():
+    st.session_state.ttt_board = [""] * 9
+    st.session_state.ttt_winner = None
+    st.session_state.ttt_turn = "Player"
+
+def run():
+    # Inject CSS to center the board and scoreboard and make buttons squares
+    st.markdown("""
+    <style>
+    /* Center and restrict the game container */
+    .main .block-container {
+        max-width: 480px !important;
+        margin: 0 auto !important;
+        padding-left: 20px !important;
+        padding-right: 20px !important;
+    }
+    
+    /* Keep the top bar stretched to full viewport width */
+    .game-top-bar {
+        width: 100vw !important;
+        margin-left: calc(-50vw + 50%) !important;
+        margin-right: calc(-50vw + 50%) !important;
+        left: 0 !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* Align the 3x3 columns tightly and center them */
+    div[data-testid="stHorizontalBlock"] {
+        max-width: 460px !important;
+        margin: 0 auto !important;
+        gap: 8px !important;
+    }
+    
+    /* Format scoreboard columns margins */
+    div[data-testid="column"] {
+        padding: 5px !important;
+    }
+    
+    /* Make only grid buttons (which are inside columns) perfect squares */
+    div[data-testid="column"] div[data-testid="stButton"] button {
+        width: 140px !important;
+        height: 140px !important;
+        margin: 0 auto !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 3rem !important;
+        font-family: 'Space Grotesk', sans-serif !important;
+        border-radius: 16px !important;
+        background-color: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        color: #ffffff !important;
+        transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+    }
+    
+    div[data-testid="column"] div[data-testid="stButton"] button:hover {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(6, 182, 212, 0.12)) !important;
+        border-color: rgba(59, 130, 246, 0.5) !important;
+        transform: scale(1.04) !important;
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15) !important;
+    }
+    
+    div[data-testid="column"] div[data-testid="stButton"] button:active {
+        transform: scale(0.98) !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.title("🎮 Neon Tic-Tac-Toe")
+    st.write("Play against the Neon AI! Can you beat it?")
+    
+    # Initialize session state for Tic-Tac-Toe
+    if "ttt_board" not in st.session_state:
+        reset_game()
+    if "ttt_score" not in st.session_state:
+        st.session_state.ttt_score = {"Player": 0, "AI": 0, "Ties": 0}
+        
+    board = st.session_state.ttt_board
+    winner = st.session_state.ttt_winner
+    
+    # Display scores
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Player (X)", st.session_state.ttt_score["Player"])
+    col2.metric("Neon AI (O)", st.session_state.ttt_score["AI"])
+    col3.metric("Ties", st.session_state.ttt_score["Ties"])
+    
+    st.write("---")
+    
+    # Render the game grid
+    # We will use columns to render a 3x3 grid
+    for row in range(3):
+        cols = st.columns([1, 1, 1])
+        for col in range(3):
+            idx = row * 3 + col
+            cell_value = board[idx]
+            
+            # Label is space or X or O
+            btn_label = cell_value if cell_value != "" else " "
+            
+            # Disable buttons if game is over or cell is filled
+            is_disabled = (winner is not None) or (cell_value != "") or (st.session_state.ttt_turn == "AI")
+            
+            # Unique key for each button
+            if cols[col].button(btn_label, key=f"cell_{idx}", use_container_width=True, disabled=is_disabled):
+                # Player moves
+                board[idx] = "X"
+                winner = check_winner(board)
+                
+                if winner:
+                    st.session_state.ttt_winner = winner
+                    if winner == "X":
+                        st.session_state.ttt_score["Player"] += 1
+                    elif winner == "Tie":
+                        st.session_state.ttt_score["Ties"] += 1
+                else:
+                    # Switch to AI turn
+                    st.session_state.ttt_turn = "AI"
+                st.rerun()
+
+    # AI Turn logic
+    if st.session_state.ttt_turn == "AI" and winner is None:
+        ai_idx = get_ai_move(board)
+        board[ai_idx] = "O"
+        winner = check_winner(board)
+        
+        if winner:
+            st.session_state.ttt_winner = winner
+            if winner == "O":
+                st.session_state.ttt_score["AI"] += 1
+            elif winner == "Tie":
+                st.session_state.ttt_score["Ties"] += 1
+        
+        st.session_state.ttt_turn = "Player"
+        st.rerun()
+        
+    # Game Over status
+    if winner:
+        st.write("---")
+        if winner == "X":
+            st.success("🎉 You won! Congratulations!")
+        elif winner == "O":
+            st.error("💀 Neon AI won. Better luck next time!")
+        else:
+            st.info("🤝 It's a tie!")
+            
+        if st.button("Play Again", type="primary", use_container_width=True):
+            reset_game()
+            st.rerun()
+            
+    # Reset Score button
+    if st.button("Reset Score Board", use_container_width=True):
+        st.session_state.ttt_score = {"Player": 0, "AI": 0, "Ties": 0}
+        reset_game()
+        st.rerun()

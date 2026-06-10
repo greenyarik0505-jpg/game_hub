@@ -1,0 +1,41 @@
+[
+  {
+    "id": "tic_tac_toe",
+    "title": "Neon Tic-Tac-Toe",
+    "author": "Artem (Student)",
+    "category": "Board",
+    "description": "Play classic Tic-Tac-Toe against a smart AI with sleek neon visuals and smooth transitions.",
+    "module": "games.tic_tac_toe",
+    "image": "assets/tic_tac_toe.jpg",
+    "tags": ["1-Player", "AI", "Classic"]
+  },
+  {
+    "id": "clicker",
+    "title": "Crypto Miner Clicker",
+    "author": "Sofia (Student)",
+    "category": "Arcade",
+    "description": "Click to mine virtual coins, buy upgrades, and build your mining empire in this retro idle game.",
+    "module": "games.clicker",
+    "image": "assets/clicker.jpg",
+    "tags": ["Clicker", "Idle", "Retro"]
+  },
+  {
+    "id": "template",
+    "title": "Student Game Template",
+    "author": "Teacher (Instruction)",
+    "category": "Strategy",
+    "description": "Learn how to structure your game code, handle session state variables, and design UI elements for the Hub.",
+    "module": "games.template",
+    "image": "assets/template.jpg",
+    "tags": ["Tutorial", "Blueprints", "Framework"]
+  },
+  {
+    "id": "broken_game",
+    "title": "Buggy Test Game",
+    "author": "Tester (Debug)",
+    "category": "Arcade",
+    "description": "An intentionally bugged game to demonstrate the Game Hub's glowing cyberpunk error diagnostic console.",
+    "module": "games.broken_game",
+    "tags": ["Debug", "Crash", "Console"]
+  }
+]
