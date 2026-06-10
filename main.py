@@ -6,6 +6,7 @@ import base64
 import re
 import sys
 from games.utils import load_profiles, get_player_profile, update_player_profile
+import ast
 
 # Set page configurations
 st.set_page_config(
@@ -48,15 +49,22 @@ def scan_games():
         if filename.endswith(".py") and not filename.startswith("__") and filename != "utils.py":
             module_id = filename[:-3]
             module_name = f"games.{module_id}"
+            file_path = os.path.join(games_dir, filename)
+            
             try:
-                # Dynamically load/reload module
-                if module_name in sys.modules:
-                    module = importlib.reload(sys.modules[module_name])
-                else:
-                    module = importlib.import_module(module_name)
-                
-                # Check for METADATA dictionary
-                metadata = getattr(module, "METADATA", {})
+                # 1. Parse file using AST to extract METADATA without executing top-level code!
+                metadata = {}
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        tree = ast.parse(f.read(), filename=file_path)
+                    for node in tree.body:
+                        if isinstance(node, ast.Assign):
+                            for target in node.targets:
+                                if isinstance(target, ast.Name) and target.id == "METADATA":
+                                    metadata = ast.literal_eval(node.value)
+                except Exception as e:
+                    # Let syntax/parse errors bubble up to broken status representation
+                    raise e
                 
                 game_data = {
                     "id": metadata.get("id", module_id),
@@ -73,13 +81,13 @@ def scan_games():
             except Exception as e:
                 import traceback
                 error_trace = traceback.format_exc()
-                # Broken game node
+                # Broken game node representation
                 games_list.append({
                     "id": module_id,
                     "title": module_id.replace("_", " ").title(),
                     "author": "Невідомий",
                     "category": "Broken",
-                    "description": "Ця гра зламалася при компіляції чи запуску. Натисніть, щоб відкрити термінал розробника.",
+                    "description": "Ця гра зламалася при компіляції або запуску. Натисніть, щоб відкрити термінал розробника.",
                     "image": None,
                     "tags": ["Broken", "Error"],
                     "module": module_name,
@@ -638,8 +646,14 @@ else:
             # Run the active student game
             try:
                 module_name = game_metadata["module"]
-                game_module = importlib.import_module(module_name)
-                game_module.run()
+                if module_name in sys.modules:
+                    game_module = importlib.reload(sys.modules[module_name])
+                else:
+                    game_module = importlib.import_module(module_name)
+                
+                # Resilient execution: call run() if present, otherwise import/reload already executed top-level code
+                if hasattr(game_module, "run"):
+                    game_module.run()
                 
             except Exception as e:
                 # Runtime crash inside running game
