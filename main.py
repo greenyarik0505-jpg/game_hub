@@ -1,6 +1,8 @@
 import streamlit as st
 import json
 import importlib
+import importlib.util
+import types
 import os
 import base64
 import re
@@ -52,8 +54,9 @@ def scan_games():
             file_path = os.path.join(games_dir, filename)
             
             try:
-                # 1. Parse file using AST to extract METADATA without executing top-level code!
+                # 1. Parse file using AST to extract METADATA and check for run() function without executing top-level code!
                 metadata = {}
+                has_run = False
                 try:
                     with open(file_path, "r", encoding="utf-8") as f:
                         tree = ast.parse(f.read(), filename=file_path)
@@ -62,6 +65,8 @@ def scan_games():
                             for target in node.targets:
                                 if isinstance(target, ast.Name) and target.id == "METADATA":
                                     metadata = ast.literal_eval(node.value)
+                        elif isinstance(node, ast.FunctionDef) and node.name == "run":
+                            has_run = True
                 except Exception as e:
                     # Let syntax/parse errors bubble up to broken status representation
                     raise e
@@ -75,7 +80,8 @@ def scan_games():
                     "image": metadata.get("image", None),
                     "tags": metadata.get("tags", []),
                     "module": module_name,
-                    "status": "active"
+                    "status": "active",
+                    "has_run": has_run
                 }
                 games_list.append(game_data)
             except Exception as e:
@@ -92,7 +98,8 @@ def scan_games():
                     "tags": ["Broken", "Error"],
                     "module": module_name,
                     "status": "broken",
-                    "error_trace": error_trace
+                    "error_trace": error_trace,
+                    "has_run": False
                 })
     return games_list
 
@@ -646,14 +653,62 @@ else:
             # Run the active student game
             try:
                 module_name = game_metadata["module"]
-                if module_name in sys.modules:
-                    game_module = importlib.reload(sys.modules[module_name])
-                else:
-                    game_module = importlib.import_module(module_name)
+                file_path = os.path.join("games", game_metadata["id"] + ".py")
                 
-                # Resilient execution: call run() if present, otherwise import/reload already executed top-level code
-                if hasattr(game_module, "run"):
-                    game_module.run()
+                # 1. Mock set_page_config globally to prevent StreamlitAPIException
+                original_set_page_config = st.set_page_config
+                st.set_page_config = lambda *args, **kwargs: None
+                
+                try:
+                    # 2. Setup module namespace without executing yet
+                    spec = importlib.util.spec_from_file_location(module_name, file_path)
+                    if spec is None:
+                        raise ImportError(f"Could not load spec for {file_path}")
+                    
+                    if module_name in sys.modules:
+                        game_module = sys.modules[module_name]
+                    else:
+                        game_module = importlib.util.module_from_spec(spec)
+                        sys.modules[module_name] = game_module
+                    
+                    # 3. Choose execution path based on AST has_run detection
+                    if game_metadata.get("has_run", False):
+                        # Well-behaved code path (uses run() function)
+                        game_module = importlib.reload(game_module)
+                        game_module.run()
+                    else:
+                        # Raw top-level code execution pathway (runs as __main__)
+                        with open(file_path, "r", encoding="utf-8") as f:
+                            code_content = f.read()
+                        
+                        game_module.__dict__["__name__"] = "__main__"
+                        exec(code_content, game_module.__dict__)
+                finally:
+                    # 4. Restore original page config
+                    st.set_page_config = original_set_page_config
+                
+                # 5. Inject a CSS override to ensure any full-viewport custom iframes start below our top-bar
+                st.markdown("""
+                <style>
+                iframe {
+                    position: fixed !important;
+                    top: 70px !important;
+                    height: calc(100vh - 70px) !important;
+                    z-index: 999999 !important;
+                }
+                .game-top-bar {
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    width: 100vw !important;
+                    z-index: 99999999 !important;
+                    box-sizing: border-box !important;
+                }
+                .main .block-container {
+                    padding-top: 80px !important;
+                }
+                </style>
+                """, unsafe_allow_html=True)
                 
             except Exception as e:
                 # Runtime crash inside running game

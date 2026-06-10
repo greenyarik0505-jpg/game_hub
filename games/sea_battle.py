@@ -1,3 +1,13 @@
+METADATA = {
+    "id": "sea_battle",
+    "title": "🚢 Морський Бій 2",
+    "author": "Команда Hub (mors_boy)",
+    "category": "Strategy",
+    "description": "Легендарна гра 'Морський Бій' у зошиті в клітинку. Грайте проти ШІ, купуйте авіаудари, торпеди, радари та змагайтеся за звання адмірала!",
+    "image": "assets/sea_battle.png",
+    "tags": ["Морський бій", "ШІ", "Стратегія", "Ретро"]
+}
+
 import streamlit as st
 import streamlit.components.v1 as components
 
