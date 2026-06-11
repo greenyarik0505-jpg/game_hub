@@ -335,7 +335,7 @@ def run():
                 
             is_disabled = (winner is not None) or (cell_value != "") or (st.session_state.ttt_turn == "O")
             
-            if cols[col].button(btn_label, key=f"cell_{idx}", use_container_width=True, disabled=is_disabled):
+            if cols[col].button(btn_label, key=f"cell_{idx}", disabled=is_disabled):
                 # Player moves
                 board[idx] = "X"
                 st.session_state.ttt_moves += 1
