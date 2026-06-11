@@ -127,7 +127,7 @@ def run():
     st.markdown("""
     <style>
     /* Center and restrict the game container */
-    .main .block-container {
+    div.stApp .main .block-container {
         max-width: 620px !important;
         margin: 0 auto !important;
         padding-left: 20px !important;
