@@ -155,17 +155,17 @@ def run():
         padding: 5px !important;
     }
     
-    /* Make only grid buttons (which are inside columns) perfect squares */
+    /* Make only grid buttons (which are inside columns) rectangular */
     div[data-testid="column"] div[data-testid="stButton"] button {
-        width: 140px !important;
-        height: 140px !important;
+        width: 100% !important;
+        height: 60px !important;
         margin: 0 auto !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        font-size: 3rem !important;
+        font-size: 2rem !important;
         font-family: 'Space Grotesk', sans-serif !important;
-        border-radius: 16px !important;
+        border-radius: 12px !important;
         background-color: var(--card-bg) !important;
         border: 1px solid var(--border-color) !important;
         color: var(--text-color) !important;
