@@ -26,36 +26,92 @@ def check_winner(board):
         return "Tie"
     return None
 
-def get_ai_move(board):
-    # Try to win, then block player, then pick center, then random
+def evaluate_board(board):
+    winner = check_winner(board)
+    if winner == "O":
+        return 10
+    elif winner == "X":
+        return -10
+    return 0
+
+def minimax(board, depth, is_maximizing):
+    score = evaluate_board(board)
+    if score == 10:
+        return score - depth
+    if score == -10:
+        return score + depth
+    if "" not in board:
+        return 0
+        
+    if is_maximizing:
+        best = -1000
+        for i in range(9):
+            if board[i] == "":
+                board[i] = "O"
+                best = max(best, minimax(board, depth + 1, False))
+                board[i] = ""
+        return best
+    else:
+        best = 1000
+        for i in range(9):
+            if board[i] == "":
+                board[i] = "X"
+                best = min(best, minimax(board, depth + 1, True))
+                board[i] = ""
+        return best
+
+def find_best_move(board):
+    best_val = -1000
+    best_move = -1
+    for i in range(9):
+        if board[i] == "":
+            board[i] = "O"
+            move_val = minimax(board, 0, False)
+            board[i] = ""
+            if move_val > best_val:
+                best_val = move_val
+                best_move = i
+    return best_move
+
+def get_ai_move(board, difficulty="Розумний 🧠"):
     empty_indices = [i for i, val in enumerate(board) if val == ""]
-    
-    # 1. Check if AI can win in the next move
-    for idx in empty_indices:
-        temp_board = list(board)
-        temp_board[idx] = "O"
-        if check_winner(temp_board) == "O":
-            return idx
-            
-    # 2. Check if Player can win and block them
-    for idx in empty_indices:
-        temp_board = list(board)
-        temp_board[idx] = "X"
-        if check_winner(temp_board) == "X":
-            return idx
-            
-    # 3. Take center if available
-    if 4 in empty_indices:
-        return 4
+    if not empty_indices:
+        return -1
         
-    # 4. Take corners if available
-    corners = [0, 2, 6, 8]
-    available_corners = [c for c in corners if c in empty_indices]
-    if available_corners:
-        return random.choice(available_corners)
+    if difficulty == "Легкий 👤":
+        return random.choice(empty_indices)
         
-    # 5. Take random
-    return random.choice(empty_indices)
+    elif difficulty == "Розумний 🧠":
+        # 1. Check if AI can win in the next move
+        for idx in empty_indices:
+            temp_board = list(board)
+            temp_board[idx] = "O"
+            if check_winner(temp_board) == "O":
+                return idx
+                
+        # 2. Check if Player can win and block them
+        for idx in empty_indices:
+            temp_board = list(board)
+            temp_board[idx] = "X"
+            if check_winner(temp_board) == "X":
+                return idx
+                
+        # 3. Take center if available
+        if 4 in empty_indices:
+            return 4
+            
+        # 4. Take corners if available
+        corners = [0, 2, 6, 8]
+        available_corners = [c for c in corners if c in empty_indices]
+        if available_corners:
+            return random.choice(available_corners)
+            
+        # 5. Take random
+        return random.choice(empty_indices)
+        
+    else:
+        # Impossible mode using minimax algorithm
+        return find_best_move(board)
 
 def reset_game():
     st.session_state.ttt_board = [""] * 9
@@ -134,8 +190,17 @@ def run():
     </style>
     """, unsafe_allow_html=True)
 
-    st.title("🎮 Tic-Tac-Toe")
-    st.write("Play against the AI! Can you beat it?")
+    col_hdr_l, col_hdr_r = st.columns([1.5, 1.0])
+    with col_hdr_l:
+        st.title("🎮 Tic-Tac-Toe")
+        st.write("Зіграйте проти ШІ! Чи зможете ви перемогти?")
+    with col_hdr_r:
+        difficulty = st.selectbox(
+            "Складність ШІ:",
+            ["Легкий 👤", "Розумний 🧠", "Неможливий 🤖"],
+            index=1,
+            key="ttt_difficulty"
+        )
     
     # Load profile data
     username = st.session_state.get("current_user", "Гість")
@@ -156,8 +221,8 @@ def run():
     
     # Display scores from profile
     col1, col2, col3 = st.columns(3)
-    col1.metric("Ви перемог (X)", ttt_stats["wins"])
-    col2.metric("AI (O)", ttt_stats["losses"])
+    col1.metric("Ви перемог (❌)", ttt_stats["wins"])
+    col2.metric("ШІ (⭕)", ttt_stats["losses"])
     col3.metric("Нічиї", ttt_stats["ties"])
     
     st.write("---")
@@ -169,7 +234,12 @@ def run():
             idx = row * 3 + col
             cell_value = board[idx]
             
-            btn_label = cell_value if cell_value != "" else " "
+            btn_label = " "
+            if cell_value == "X":
+                btn_label = "❌"
+            elif cell_value == "O":
+                btn_label = "⭕"
+                
             is_disabled = (winner is not None) or (cell_value != "") or (st.session_state.ttt_turn == "AI")
             
             if cols[col].button(btn_label, key=f"cell_{idx}", use_container_width=True, disabled=is_disabled):
@@ -189,23 +259,24 @@ def run():
                 else:
                     st.session_state.ttt_turn = "AI"
                 st.rerun()
-
+ 
     # AI Turn logic
     if st.session_state.ttt_turn == "AI" and winner is None:
-        ai_idx = get_ai_move(board)
-        board[ai_idx] = "O"
-        winner = check_winner(board)
-        
-        if winner:
-            st.session_state.ttt_winner = winner
-            if winner == "O":
-                ttt_stats["losses"] += 1
-            elif winner == "Tie":
-                ttt_stats["ties"] += 1
+        ai_idx = get_ai_move(board, difficulty)
+        if ai_idx != -1:
+            board[ai_idx] = "O"
+            winner = check_winner(board)
             
-            profile["tic_tac_toe"] = ttt_stats
-            update_player_profile(username, profile)
-        
+            if winner:
+                st.session_state.ttt_winner = winner
+                if winner == "O":
+                    ttt_stats["losses"] += 1
+                elif winner == "Tie":
+                    ttt_stats["ties"] += 1
+                
+                profile["tic_tac_toe"] = ttt_stats
+                update_player_profile(username, profile)
+            
         st.session_state.ttt_turn = "Player"
         st.rerun()
         
@@ -214,6 +285,7 @@ def run():
         st.write("---")
         if winner == "X":
             st.success("🎉 Ви перемогли! Вітаємо!")
+            st.balloons()
         elif winner == "O":
             st.error("💀 ШІ переміг. Спробуйте ще раз!")
         else:
