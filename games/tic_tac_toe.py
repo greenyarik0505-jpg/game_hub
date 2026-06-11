@@ -106,18 +106,26 @@ def run():
         font-size: 3rem !important;
         font-family: 'Space Grotesk', sans-serif !important;
         border-radius: 16px !important;
-        background-color: #ffffff !important;
-        border: 1px solid #cbd5e1 !important;
-        color: #0f172a !important;
+        background-color: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        color: var(--text-color) !important;
         transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+        box-shadow: 0 4px 6px var(--shadow-color) !important;
     }
     
     div[data-testid="column"] div[data-testid="stButton"] button:hover {
-        background: #f8fafc !important;
-        border-color: #3b82f6 !important;
+        background: var(--bg-color) !important;
+        border-color: var(--primary-color) !important;
         transform: scale(1.02) !important;
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1) !important;
+        box-shadow: 0 6px 15px var(--shadow-color) !important;
+    }
+    
+    div[data-testid="column"] div[data-testid="stButton"] button:disabled {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+        opacity: 1.0 !important;
+        border-color: var(--border-color) !important;
+        cursor: not-allowed !important;
     }
     
     div[data-testid="column"] div[data-testid="stButton"] button:active {

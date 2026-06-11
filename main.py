@@ -7,7 +7,7 @@ import os
 import base64
 import re
 import sys
-from games.utils import load_profiles, get_player_profile, update_player_profile
+from games.utils import load_profiles, save_profiles, get_player_profile, update_player_profile
 import ast
 
 # Set page configurations
@@ -17,6 +17,81 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+THEMES = {
+    "light": {
+        "bg-color": "#f8fafc",
+        "bg-image": "none",
+        "bg-size": "auto",
+        "text-color": "#0f172a",
+        "text-secondary": "#475569",
+        "card-bg": "#ffffff",
+        "border-color": "#cbd5e1",
+        "primary-color": "#2563eb",
+        "primary-hover": "#1d4ed8",
+        "shadow-color": "rgba(0, 0, 0, 0.04)",
+        "card-hover-border": "#3b82f6",
+        "input-bg": "#ffffff",
+        "active-user-bg": "#eff6ff",
+        "active-user-text": "#1e40af",
+        "badge-bg": "rgba(241, 245, 249, 0.9)",
+        "card-hover-shadow": "0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03)"
+    },
+    "dark": {
+        "bg-color": "#0f172a",
+        "bg-image": "none",
+        "bg-size": "auto",
+        "text-color": "#f8fafc",
+        "text-secondary": "#94a3b8",
+        "card-bg": "#1e293b",
+        "border-color": "#334155",
+        "primary-color": "#3b82f6",
+        "primary-hover": "#2563eb",
+        "shadow-color": "rgba(0, 0, 0, 0.3)",
+        "card-hover-border": "#60a5fa",
+        "input-bg": "#1e293b",
+        "active-user-bg": "rgba(59, 130, 246, 0.15)",
+        "active-user-text": "#60a5fa",
+        "badge-bg": "rgba(30, 41, 59, 0.8)",
+        "card-hover-shadow": "0 12px 20px -3px rgba(0, 0, 0, 0.3), 0 4px 8px -2px rgba(0, 0, 0, 0.2)"
+    },
+    "cyberpunk": {
+        "bg-color": "#06070d",
+        "bg-image": "none",
+        "bg-size": "auto",
+        "text-color": "#e2e8f0",
+        "text-secondary": "#94a3b8",
+        "card-bg": "#0f1423",
+        "border-color": "rgba(255,255,255,0.04)",
+        "primary-color": "#06b6d4",
+        "primary-hover": "#0891b2",
+        "shadow-color": "rgba(0, 0, 0, 0.4)",
+        "card-hover-border": "#3b82f6",
+        "input-bg": "rgba(22, 28, 45, 0.3)",
+        "active-user-bg": "rgba(59, 130, 246, 0.06)",
+        "active-user-text": "#ffffff",
+        "badge-bg": "rgba(6, 7, 13, 0.7)",
+        "card-hover-shadow": "0 20px 40px rgba(0, 0, 0, 0.45), 0 0 30px rgba(6, 182, 212, 0.15)"
+    },
+    "notebook": {
+        "bg-color": "#FAF8F2",
+        "bg-image": "linear-gradient(rgba(43, 62, 144, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(43, 62, 144, 0.06) 1px, transparent 1px)",
+        "bg-size": "28px 28px",
+        "text-color": "#2B3E90",
+        "text-secondary": "#5A6A85",
+        "card-bg": "#FAF8F2",
+        "border-color": "#2B3E90",
+        "primary-color": "#2B3E90",
+        "primary-hover": "#D97706",
+        "shadow-color": "rgba(43, 62, 144, 0.15)",
+        "card-hover-border": "#D97706",
+        "input-bg": "#FAF8F2",
+        "active-user-bg": "#FEF08A",
+        "active-user-text": "#D97706",
+        "badge-bg": "#FAF8F2",
+        "card-hover-shadow": "4px 4px 0px rgba(43, 62, 144, 0.25)"
+    }
+}
 
 # Helper function to inject custom CSS
 def local_css(file_name):
@@ -148,36 +223,140 @@ def get_game_cover_html(game):
     if img_data:
         return f'<img src="{img_data}" class="game-cover-image" alt="{game["title"]}">'
             
-    # Fallback if image not found
+    # SVG Vector fallback designs instead of placeholders/emojis
     game_id = game["id"]
-    FALLBACKS = {
-        "tic_tac_toe": {
-            "gradient": "linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)",
-            "emoji": "❌⭕"
-        },
-        "clicker": {
-            "gradient": "linear-gradient(135deg, #ecfeff 0%, #cffafe 100%)",
-            "emoji": "🪙"
-        },
-        "memory_match": {
-            "gradient": "linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)",
-            "emoji": "🧠"
-        },
-        "template": {
-            "gradient": "linear-gradient(135deg, #f0fdf4 0%, #bbf7d0 100%)",
-            "emoji": "💻"
-        }
-    }
-    fallback = FALLBACKS.get(game_id, {
-        "gradient": "linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)" if game.get("status") == "broken" else "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-        "emoji": "⚠️" if game.get("status") == "broken" else "🎮"
-    })
-    
-    return f"""
-    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: {fallback['gradient']};">
-        <div class="game-cover-fallback" style="font-size: 3rem;">{fallback['emoji']}</div>
-    </div>
-    """
+    if game_id == "tic_tac_toe":
+        return """
+        <svg width="100%" height="100%" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="ttt-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#3b82f6"/>
+                    <stop offset="100%" stop-color="#8b5cf6"/>
+                </linearGradient>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#ttt-grad)"/>
+            <line x1="100" y1="20" x2="100" y2="130" stroke="rgba(255,255,255,0.2)" stroke-width="4"/>
+            <line x1="200" y1="20" x2="200" y2="130" stroke="rgba(255,255,255,0.2)" stroke-width="4"/>
+            <line x1="30" y1="50" x2="270" y2="50" stroke="rgba(255,255,255,0.2)" stroke-width="4"/>
+            <line x1="30" y1="100" x2="270" y2="100" stroke="rgba(255,255,255,0.2)" stroke-width="4"/>
+            <line x1="50" y1="25" x2="80" y2="45" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+            <line x1="80" y1="25" x2="50" y2="45" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+            <circle cx="150" cy="75" r="18" fill="none" stroke="#ffffff" stroke-width="6"/>
+            <line x1="220" y1="105" x2="250" y2="125" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+            <line x1="250" y1="105" x2="220" y2="125" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+        </svg>
+        """
+    elif game_id == "clicker":
+        return """
+        <svg width="100%" height="100%" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="click-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#06b6d4"/>
+                    <stop offset="100%" stop-color="#0891b2"/>
+                </linearGradient>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#click-grad)"/>
+            <circle cx="150" cy="75" r="45" fill="rgba(255,255,255,0.1)"/>
+            <circle cx="150" cy="75" r="35" fill="rgba(255,255,255,0.15)"/>
+            <circle cx="150" cy="75" r="25" fill="#f59e0b" stroke="#ffffff" stroke-width="3"/>
+            <text x="150" y="83" font-family="'Space Grotesk', sans-serif" font-size="24" font-weight="bold" fill="#ffffff" text-anchor="middle">C</text>
+            <path d="M165,85 L180,110 L172,114 L160,95 L152,103 L152,80 Z" fill="#ffffff" stroke="#0f172a" stroke-width="1.5"/>
+        </svg>
+        """
+    elif game_id == "memory_match":
+        return """
+        <svg width="100%" height="100%" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="mem-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ec4899"/>
+                    <stop offset="100%" stop-color="#db2777"/>
+                </linearGradient>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#mem-grad)"/>
+            <rect x="40" y="30" width="60" height="90" rx="6" fill="#ffffff" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+            <text x="70" y="85" font-size="28" text-anchor="middle">❓</text>
+            <rect x="120" y="30" width="60" height="90" rx="6" fill="#ffffff" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+            <text x="150" y="85" font-size="28" text-anchor="middle">🧠</text>
+            <rect x="200" y="30" width="60" height="90" rx="6" fill="#ffffff" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+            <text x="230" y="85" font-size="28" text-anchor="middle">🧠</text>
+        </svg>
+        """
+    elif game_id == "template":
+        return """
+        <svg width="100%" height="100%" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="temp-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#10b981"/>
+                    <stop offset="100%" stop-color="#059669"/>
+                </linearGradient>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#temp-grad)"/>
+            <rect x="30" y="30" width="240" height="90" rx="6" fill="rgba(15, 23, 42, 0.4)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+            <text x="45" y="55" font-family="monospace" font-size="12" fill="#38bdf8">&lt;code&gt;</text>
+            <rect x="45" y="70" width="120" height="6" rx="3" fill="rgba(255,255,255,0.3)"/>
+            <rect x="45" y="82" width="180" height="6" rx="3" fill="rgba(255,255,255,0.3)"/>
+            <rect x="45" y="94" width="80" height="6" rx="3" fill="rgba(255,255,255,0.3)"/>
+            <text x="220" y="110" font-family="monospace" font-size="12" fill="#38bdf8">&lt;/&gt;</text>
+        </svg>
+        """
+    elif game_id == "test_no_instructions":
+        return """
+        <svg width="100%" height="100%" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="rocket-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#f43f5e"/>
+                    <stop offset="100%" stop-color="#be123c"/>
+                </linearGradient>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#rocket-grad)"/>
+            <circle cx="150" cy="75" r="45" fill="rgba(255,255,255,0.1)"/>
+            <text x="150" y="85" font-size="44" text-anchor="middle">🚀</text>
+            <text x="150" y="125" font-family="'Space Grotesk', sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">ВІЛЬНА ГРА</text>
+        </svg>
+        """
+    elif game_id == "broken_game":
+        return """
+        <svg width="100%" height="100%" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="bug-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#374151"/>
+                    <stop offset="100%" stop-color="#111827"/>
+                </linearGradient>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#bug-grad)"/>
+            <circle cx="150" cy="75" r="45" fill="rgba(255,255,255,0.05)"/>
+            <text x="150" y="85" font-size="44" text-anchor="middle">👾</text>
+            <text x="150" y="125" font-family="'Space Grotesk', sans-serif" font-size="12" font-weight="bold" fill="#f87171" text-anchor="middle">CRASH TEST</text>
+        </svg>
+        """
+    elif game.get("status") == "broken":
+        return """
+        <svg width="100%" height="100%" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="err-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ef4444"/>
+                    <stop offset="100%" stop-color="#b91c1c"/>
+                </linearGradient>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#err-grad)"/>
+            <text x="150" y="65" font-size="36" text-anchor="middle">⚠️</text>
+            <text x="150" y="100" font-family="monospace" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">COMPILE ERROR</text>
+        </svg>
+        """
+    else:
+        return """
+        <svg width="100%" height="100%" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="def-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#6366f1"/>
+                    <stop offset="100%" stop-color="#4f46e5"/>
+                </linearGradient>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#def-grad)"/>
+            <text x="150" y="75" font-size="36" text-anchor="middle">🎮</text>
+            <text x="150" y="115" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">GAME HUB</text>
+        </svg>
+        """
 
 # Generate a unique deterministic gradient avatar from username
 def get_avatar_html(username, size=50):
@@ -224,6 +403,32 @@ active_user = st.session_state.current_user
 user_profile = get_player_profile(active_user)
 st.session_state.user_profile = user_profile
 
+# Determine selected theme from query params, profile settings, or default to light
+if "theme" in query_params:
+    selected_theme = query_params["theme"]
+    # Save theme in user profile
+    if active_user != "Гість":
+        if "settings" not in user_profile:
+            user_profile["settings"] = {}
+        user_profile["settings"]["theme"] = selected_theme
+        update_player_profile(active_user, user_profile)
+else:
+    selected_theme = user_profile.get("settings", {}).get("theme", "light")
+
+if selected_theme not in THEMES:
+    selected_theme = "light"
+
+st.session_state.active_theme = selected_theme
+
+# Inject CSS variables for active theme dynamically
+theme_vars = THEMES[selected_theme]
+css_vars_str = ":root {\n"
+for key, val in theme_vars.items():
+    css_vars_str += f"    --{key}: {val} !important;\n"
+css_vars_str += "}"
+
+st.markdown(f"<style>{css_vars_str}</style>", unsafe_allow_html=True)
+
 # Process ratings query parameters
 query_params = st.query_params
 active_page = query_params.get("page", "menu")
@@ -259,7 +464,7 @@ if active_page == "menu":
                 {avatar_html}
                 <div>
                     <div style="font-size: 0.8rem; color: #64748b; font-weight: 500;">ГРАВЕЦЬ</div>
-                    <div style="font-size: 1.1rem; color: #fff; font-weight: 700; font-family: 'Space Grotesk', sans-serif;">{active_user}</div>
+                    <div style="font-size: 1.1rem; color: var(--text-color); font-weight: 700; font-family: 'Space Grotesk', sans-serif;">{active_user}</div>
                 </div>
             </div>
         </div>
@@ -282,8 +487,9 @@ if active_page == "menu":
                             del st.session_state[k]
                     st.rerun()
         with sub_col2:
-            # Simple link to school web or stats
-            st.button("⚙️ Налаштування", key="btn_settings", disabled=True, use_container_width=True)
+            if st.button("⚙️ Налаштування", key="btn_settings", use_container_width=True):
+                st.query_params["page"] = "settings"
+                st.rerun()
 
         if st.session_state.show_login:
             # Login Form
@@ -323,7 +529,7 @@ if active_page == "menu":
     col_main_grid, col_leaderboard = st.columns([2.2, 1.2])
 
     with col_main_grid:
-        st.markdown('<h2 style="font-family:\'Space Grotesk\', sans-serif; font-size:1.6rem; color:#fff; margin-bottom: 20px;">🎮 Доступні ігри</h2>', unsafe_allow_html=True)
+        st.markdown('<h2 style="font-family:\'Space Grotesk\', sans-serif; font-size:1.6rem; color:var(--text-color); margin-bottom: 20px;">🎮 Доступні ігри</h2>', unsafe_allow_html=True)
         
         # Get category from query parameters if present, fallback to session state, then 'All'
         if "cat" in query_params:
@@ -474,7 +680,7 @@ if active_page == "menu":
         mem_moves = user_stats.get("memory_match", {}).get("best_moves", 999)
         mem_moves_str = str(mem_moves) if mem_moves < 999 else "немає"
         
-        st.markdown('<h2 style="font-family:\'Space Grotesk\', sans-serif; font-size:1.6rem; color:#fff; margin-bottom: 20px;">👤 Мої досягнення</h2>', unsafe_allow_html=True)
+        st.markdown('<h2 style="font-family:\'Space Grotesk\', sans-serif; font-size:1.6rem; color:var(--text-color); margin-bottom: 20px;">👤 Мої досягнення</h2>', unsafe_allow_html=True)
         
         render_html(f"""
         <div class="user-achievements-card">
@@ -482,7 +688,7 @@ if active_page == "menu":
                 {get_avatar_html(active_user, size=46)}
                 <div>
                     <div style="font-size: 0.75rem; color: #64748b; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Профіль гравця</div>
-                    <div style="font-size: 1.25rem; color: #fff; font-weight: 700; font-family: 'Space Grotesk', sans-serif;">{active_user}</div>
+                    <div style="font-size: 1.25rem; color: var(--text-color); font-weight: 700; font-family: 'Space Grotesk', sans-serif;">{active_user}</div>
                 </div>
             </div>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
@@ -505,7 +711,7 @@ if active_page == "menu":
         </div>
         """)
 
-        st.markdown('<h2 style="font-family:\'Space Grotesk\', sans-serif; font-size:1.6rem; color:#fff; margin-bottom: 20px;">🏆 Таблиця лідерів класу</h2>', unsafe_allow_html=True)
+        st.markdown('<h2 style="font-family:\'Space Grotesk\', sans-serif; font-size:1.6rem; color:var(--text-color); margin-bottom: 20px;">🏆 Таблиця лідерів класу</h2>', unsafe_allow_html=True)
         
         # Tabs for different leaderboards
         tab_clicker, tab_ttt, tab_memory = st.tabs(["🪙 Клікер", "❌ Tic-Tac-Toe", "🧠 Memory Match"])
@@ -524,7 +730,7 @@ if active_page == "menu":
                 for idx, (user, val) in enumerate(clicker_ranks):
                     badge = "👑" if idx == 0 else "🥈" if idx == 1 else "🥉" if idx == 2 else f"{idx+1}"
                     row_avatar = get_avatar_html(user, size=24)
-                    highlight_style = "style='color:#fff; font-weight:700;'" if user == active_user else ""
+                    highlight_style = "style='color:var(--active-user-text); font-weight:700;'" if user == active_user else ""
                     rows_html += f"""
                     <tr class="{'current-user-row' if user == active_user else ''}">
                         <td style="padding: 10px; font-weight:bold; color:#f59e0b;">{badge}</td>
@@ -566,7 +772,7 @@ if active_page == "menu":
                 for idx, (user, wins_val, losses_val) in enumerate(ttt_ranks):
                     badge = "👑" if idx == 0 else "🥈" if idx == 1 else "🥉" if idx == 2 else f"{idx+1}"
                     row_avatar = get_avatar_html(user, size=24)
-                    highlight_style = "style='color:#fff; font-weight:700;'" if user == active_user else ""
+                    highlight_style = "style='color:var(--active-user-text); font-weight:700;'" if user == active_user else ""
                     rows_html += f"""
                     <tr class="{'current-user-row' if user == active_user else ''}">
                         <td style="padding: 10px; font-weight:bold; color:#f59e0b;">{badge}</td>
@@ -611,7 +817,7 @@ if active_page == "menu":
                 for idx, (user, moves_val, duration_val) in enumerate(mem_ranks):
                     badge = "👑" if idx == 0 else "🥈" if idx == 1 else "🥉" if idx == 2 else f"{idx+1}"
                     row_avatar = get_avatar_html(user, size=24)
-                    highlight_style = "style='color:#fff; font-weight:700;'" if user == active_user else ""
+                    highlight_style = "style='color:var(--active-user-text); font-weight:700;'" if user == active_user else ""
                     rows_html += f"""
                     <tr class="{'current-user-row' if user == active_user else ''}">
                         <td style="padding: 10px; font-weight:bold; color:#f59e0b;">{badge}</td>
@@ -639,6 +845,107 @@ if active_page == "menu":
                 """)
             else:
                 st.write("Статистика відсутня. Будьте першим, хто пройде Memory Match!")
+
+elif active_page == "settings":
+    # --- RENDER SETTINGS VIEW ---
+    from games.utils import get_default_profile
+    
+    st.markdown('<h1 style="font-family:\'Space Grotesk\', sans-serif; font-size:2.2rem; color:var(--text-color); margin-bottom: 5px;">⚙️ Налаштування Game Hub</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="color:var(--text-secondary); margin-bottom: 30px;">Керування профілем, темами оформлення та ігровим процесом</p>', unsafe_allow_html=True)
+    
+    render_html('<div class="neon-line" style="width: 100%; margin-top: 5px; margin-bottom: 30px;"></div>')
+    
+    col_set_left, col_set_right = st.columns([1.5, 1.0])
+    
+    with col_set_left:
+        st.markdown('<h3 style="font-family:\'Space Grotesk\', sans-serif; font-size:1.4rem; color:var(--text-color); margin-bottom: 20px;">🎨 Оберіть тему оформлення</h3>', unsafe_allow_html=True)
+        
+        # Grid of themes
+        col_t1, col_t2 = st.columns(2)
+        col_t3, col_t4 = st.columns(2)
+        
+        # Helper to render theme selection cards
+        def theme_card_button(col_obj, theme_id, theme_name, theme_desc, color_preview):
+            is_active = (selected_theme == theme_id)
+            active_class = "active" if is_active else ""
+            
+            with col_obj:
+                render_html(f"""
+                <div class="theme-selector-card {active_class}">
+                    <div style="font-weight:bold; font-size:1.1rem; margin-bottom:4px;">{theme_name}</div>
+                    <div style="font-size:0.8rem; color:var(--text-secondary); height: 35px; overflow:hidden;">{theme_desc}</div>
+                    <div class="theme-preview-dot" style="background-color: {color_preview};"></div>
+                </div>
+                """)
+                
+                # Invisible Streamlit button to handle click state
+                if st.button(f"Застосувати {theme_name}", key=f"t_btn_{theme_id}", use_container_width=True):
+                    st.query_params["theme"] = theme_id
+                    st.rerun()
+
+        theme_card_button(col_t1, "light", "Світла тема", "Чистий, мінімалістичний дизайн для роботи при світлі.", "#ffffff")
+        theme_card_button(col_t2, "dark", "Темна тема", "Класичний приємний темний режим для вечірньої гри.", "#1e293b")
+        theme_card_button(col_t3, "cyberpunk", "Кіберпанк (Неон)", "Світіння неонових ліній та динамічний темний інтерфейс.", "#06b6d4")
+        theme_card_button(col_t4, "notebook", "Ретро Зошит", "В стилі шкільного зошита в клітинку синіми чорнилами.", "#FAF8F2")
+        
+    with col_set_right:
+        st.markdown('<h3 style="font-family:\'Space Grotesk\', sans-serif; font-size:1.4rem; color:var(--text-color); margin-bottom: 20px;">👤 Керування профілем</h3>', unsafe_allow_html=True)
+        
+        render_html(f"""
+        <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:16px; padding:20px; box-shadow: 0 4px 6px -1px var(--shadow-color);">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                {get_avatar_html(active_user, size=46)}
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">ГРАВЕЦЬ</div>
+                    <div style="font-size: 1.25rem; color: var(--text-color); font-weight: 700; font-family: 'Space Grotesk', sans-serif;">{active_user}</div>
+                </div>
+            </div>
+        </div>
+        """)
+        
+        st.write("")
+        
+        # Nickname editor
+        if active_user != "Гість":
+            new_nick = st.text_input("Змінити нікнейм:", value=active_user)
+            if st.button("Зберегти нікнейм", use_container_width=True):
+                cleaned_nick = new_nick.strip()
+                if cleaned_nick and cleaned_nick.lower() != "гість":
+                    # Rename profile in profiles.json
+                    profiles = load_profiles()
+                    if active_user in profiles:
+                        profile_data = profiles.pop(active_user)
+                        profiles[cleaned_nick] = profile_data
+                        save_profiles(profiles)
+                        
+                        st.session_state.current_user = cleaned_nick
+                        st.query_params["user"] = cleaned_nick
+                        st.success("Нікнейм успішно змінено!")
+                        st.rerun()
+                elif cleaned_nick.lower() == "гість":
+                    st.warning("Ім'я 'Гість' зарезервоване.")
+        else:
+            st.info("Ввійдіть в систему, щоб змінювати налаштування профілю.")
+            
+        st.write("---")
+        st.markdown('<h4 style="color:#ef4444; font-weight:700;">Небезпечна зона</h4>', unsafe_allow_html=True)
+        
+        if active_user != "Гість":
+            if st.button("💥 Скинути мою статистику", type="secondary", use_container_width=True):
+                # Reset all records for user
+                profiles = load_profiles()
+                if active_user in profiles:
+                    profiles[active_user] = get_default_profile()
+                    save_profiles(profiles)
+                    st.session_state.user_profile = profiles[active_user]
+                    st.toast("Статистику успішно скинуто!", icon="💥")
+                    st.rerun()
+        else:
+            st.button("💥 Скинути мою статистику", disabled=True, use_container_width=True)
+            
+    st.write("---")
+    # Back button
+    st.markdown(f'<a href="/?page=menu&user={active_user}&theme={selected_theme}" target="_self" class="back-btn">⬅ Повернутися до меню</a>', unsafe_allow_html=True)
 
 else:
     # --- RENDER ACTIVE GAME ---
