@@ -1,5 +1,6 @@
 import streamlit as st
 import random
+import time
 from games.utils import get_player_profile, update_player_profile
 
 METADATA = {
@@ -73,15 +74,15 @@ def find_best_move(board):
                 best_move = i
     return best_move
 
-def get_ai_move(board, difficulty="Розумний 🧠"):
+def get_ai_move(board, difficulty="Середній"):
     empty_indices = [i for i, val in enumerate(board) if val == ""]
     if not empty_indices:
         return -1
         
-    if difficulty == "Легкий 👤":
+    if difficulty == "Легкий":
         return random.choice(empty_indices)
         
-    elif difficulty == "Розумний 🧠":
+    elif difficulty == "Середній":
         # 1. Check if AI can win in the next move
         for idx in empty_indices:
             temp_board = list(board)
@@ -116,7 +117,10 @@ def get_ai_move(board, difficulty="Розумний 🧠"):
 def reset_game():
     st.session_state.ttt_board = [""] * 9
     st.session_state.ttt_winner = None
-    st.session_state.ttt_turn = "Player"
+    st.session_state.ttt_turn = "X"
+    st.session_state.ttt_moves = 0
+    st.session_state.ttt_start_time = time.time()
+    st.session_state.ttt_elapsed_time = 0.0
 
 def run():
     # Inject CSS to center the board and scoreboard and make buttons squares
@@ -187,20 +191,58 @@ def run():
     div[data-testid="column"] div[data-testid="stButton"] button:active {
         transform: scale(0.98) !important;
     }
+    
+    /* Style the surrender button in column 3 to be pink */
+    div[data-testid="column"]:nth-of-type(3) button {
+        background-color: #f43f5e !important;
+        color: #ffffff !important;
+        border: none !important;
+    }
+    div[data-testid="column"]:nth-of-type(3) button:hover {
+        background-color: #e11d48 !important;
+        box-shadow: 0 4px 10px rgba(244, 63, 94, 0.3) !important;
+    }
+    
+    /* Custom status bar styling */
+    .ttt-status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        padding: 8px 12px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        box-shadow: 0 4px 6px var(--shadow-color);
+    }
+    .ttt-badge {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.82rem;
+        font-family: 'Space Grotesk', sans-serif;
+    }
+    .ttt-badge.pink {
+        background-color: #f43f5e;
+        color: #ffffff !important;
+    }
+    .ttt-badge.dark {
+        background-color: var(--border-color);
+        color: var(--text-color) !important;
+    }
+    .ttt-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-color);
+        font-family: 'Space Grotesk', sans-serif;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-    col_hdr_l, col_hdr_r = st.columns([1.5, 1.0])
-    with col_hdr_l:
-        st.title("🎮 Tic-Tac-Toe")
-        st.write("Зіграйте проти ШІ! Чи зможете ви перемогти?")
-    with col_hdr_r:
-        difficulty = st.selectbox(
-            "Складність ШІ:",
-            ["Легкий 👤", "Розумний 🧠", "Неможливий 🤖"],
-            index=1,
-            key="ttt_difficulty"
-        )
+    # Title
+    st.markdown('<h2 style="text-align:center; font-family:\'Space Grotesk\', sans-serif; color:var(--text-color); margin-bottom:15px;">Хрестики-нолики (З вибором складності)</h2>', unsafe_allow_html=True)
     
     # Load profile data
     username = st.session_state.get("current_user", "Гість")
@@ -208,9 +250,10 @@ def run():
     
     # Make sure we have the correct nested dict
     if "tic_tac_toe" not in profile:
-        profile["tic_tac_toe"] = {"wins": 0, "losses": 0, "ties": 0}
+        profile["tic_tac_toe"] = {"wins": 0, "losses": 0, "ties": 0, "streak": 0}
         
     ttt_stats = profile["tic_tac_toe"]
+    streak = ttt_stats.get("streak", 0)
     
     # Initialize session state for Tic-Tac-Toe
     if "ttt_board" not in st.session_state:
@@ -219,13 +262,63 @@ def run():
     board = st.session_state.ttt_board
     winner = st.session_state.ttt_winner
     
-    # Display scores from profile
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Ви перемог (❌)", ttt_stats["wins"])
-    col2.metric("ШІ (⭕)", ttt_stats["losses"])
-    col3.metric("Нічиї", ttt_stats["ties"])
+    # Controls row
+    col_diff, col_restart, col_surrender, col_reset = st.columns([1.6, 1.0, 1.0, 1.0])
     
-    st.write("---")
+    with col_diff:
+        difficulty = st.selectbox(
+            "Складність:",
+            ["Легкий", "Середній", "Нереальний (Ідеальний)"],
+            index=1,
+            label_visibility="collapsed",
+            key="ttt_difficulty"
+        )
+        
+    with col_restart:
+        if st.button("Почати заново", key="btn_restart", use_container_width=True):
+            reset_game()
+            st.rerun()
+            
+    with col_surrender:
+        # Player surrenders -> loses game
+        is_surrender_disabled = (winner is not None)
+        if st.button("Здатися 🏳️", key="btn_surrender", use_container_width=True, disabled=is_surrender_disabled):
+            st.session_state.ttt_winner = "O"
+            st.session_state.ttt_elapsed_time = time.time() - st.session_state.ttt_start_time
+            ttt_stats["losses"] += 1
+            ttt_stats["streak"] = streak + 1
+            profile["tic_tac_toe"] = ttt_stats
+            update_player_profile(username, profile)
+            st.rerun()
+            
+    with col_reset:
+        if st.button("Скинути рахунок", key="btn_reset", use_container_width=True):
+            profile["tic_tac_toe"] = {"wins": 0, "losses": 0, "ties": 0, "streak": 0}
+            update_player_profile(username, profile)
+            reset_game()
+            st.rerun()
+            
+    # Calculate elapsed time
+    if winner is None:
+        elapsed = time.time() - st.session_state.ttt_start_time
+    else:
+        elapsed = st.session_state.ttt_elapsed_time
+
+    # Render custom status bar matching screenshot
+    if winner is None:
+        turn_text = f"ХІД: {st.session_state.ttt_turn} | {difficulty}"
+    else:
+        turn_text = "ГРА ЗАВЕРШЕНА"
+        
+    status_bar_html = f"""
+    <div class="ttt-status-bar">
+        <span class="ttt-badge pink">{turn_text}</span>
+        <span class="ttt-badge dark">Рахунок: <span style="color:#f43f5e;">{ttt_stats['wins']}</span> - <span style="color:#3b82f6;">{ttt_stats['losses']}</span> - <span style="color:#94a3b8;">{ttt_stats['ties']}</span></span>
+        <span class="ttt-label">Хід: {st.session_state.ttt_moves}</span>
+        <span class="ttt-label">Час: {elapsed:.1f}s</span>
+    </div>
+    """
+    st.markdown(status_bar_html, unsafe_allow_html=True)
     
     # Render the game grid
     for row in range(3):
@@ -240,64 +333,65 @@ def run():
             elif cell_value == "O":
                 btn_label = "⭕"
                 
-            is_disabled = (winner is not None) or (cell_value != "") or (st.session_state.ttt_turn == "AI")
+            is_disabled = (winner is not None) or (cell_value != "") or (st.session_state.ttt_turn == "O")
             
             if cols[col].button(btn_label, key=f"cell_{idx}", use_container_width=True, disabled=is_disabled):
                 # Player moves
                 board[idx] = "X"
+                st.session_state.ttt_moves += 1
+                st.session_state.ttt_elapsed_time = time.time() - st.session_state.ttt_start_time
                 winner = check_winner(board)
                 
                 if winner:
                     st.session_state.ttt_winner = winner
                     if winner == "X":
                         ttt_stats["wins"] += 1
+                        ttt_stats["streak"] = 0
                     elif winner == "Tie":
                         ttt_stats["ties"] += 1
+                        ttt_stats["streak"] = streak + 1
                     
                     profile["tic_tac_toe"] = ttt_stats
                     update_player_profile(username, profile)
                 else:
-                    st.session_state.ttt_turn = "AI"
+                    st.session_state.ttt_turn = "O"
                 st.rerun()
  
     # AI Turn logic
-    if st.session_state.ttt_turn == "AI" and winner is None:
+    if st.session_state.ttt_turn == "O" and winner is None:
         ai_idx = get_ai_move(board, difficulty)
         if ai_idx != -1:
             board[ai_idx] = "O"
+            st.session_state.ttt_moves += 1
+            st.session_state.ttt_elapsed_time = time.time() - st.session_state.ttt_start_time
             winner = check_winner(board)
             
             if winner:
                 st.session_state.ttt_winner = winner
                 if winner == "O":
                     ttt_stats["losses"] += 1
+                    ttt_stats["streak"] = streak + 1
                 elif winner == "Tie":
                     ttt_stats["ties"] += 1
+                    ttt_stats["streak"] = streak + 1
                 
                 profile["tic_tac_toe"] = ttt_stats
                 update_player_profile(username, profile)
             
-        st.session_state.ttt_turn = "Player"
+        st.session_state.ttt_turn = "X"
         st.rerun()
         
-    # Game Over status
-    if winner:
-        st.write("---")
-        if winner == "X":
-            st.success("🎉 Ви перемогли! Вітаємо!")
-            st.balloons()
-        elif winner == "O":
-            st.error("💀 ШІ переміг. Спробуйте ще раз!")
-        else:
-            st.info("🤝 Нічия!")
-            
-        if st.button("Грати знову", type="primary", use_container_width=True):
-            reset_game()
-            st.rerun()
-            
-    # Reset Score button
-    if st.button("Скинути статистику", use_container_width=True):
-        profile["tic_tac_toe"] = {"wins": 0, "losses": 0, "ties": 0}
-        update_player_profile(username, profile)
-        reset_game()
-        st.rerun()
+    st.write("")
+    
+    # Bottom status messages matching screenshot, but in Ukrainian
+    if winner is None:
+        st.markdown(f'<div style="text-align:center; color:#22c55e; font-weight:bold; font-size:1.1rem;">Гра почалася. Складність: {difficulty}. Першим ходить: X</div>', unsafe_allow_html=True)
+    elif winner == "X":
+        st.markdown(f'<div style="text-align:center; color:#22c55e; font-weight:bold; font-size:1.1rem;">Вітаємо! Ви перемогли ШІ на складності {difficulty}!</div>', unsafe_allow_html=True)
+        st.balloons()
+    elif winner == "O":
+        st.markdown(f'<div style="text-align:center; color:#f43f5e; font-weight:bold; font-size:1.1rem;">ШІ переміг на складності {difficulty}. Спробуйте ще раз!</div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div style="text-align:center; color:#3b82f6; font-weight:bold; font-size:1.1rem;">Нічия на складності {difficulty}! Хороша гра.</div>', unsafe_allow_html=True)
+        
+    st.markdown(f'<div style="text-align:center; color:#3b82f6; font-size:0.95rem; margin-top:5px;">Серія без перемог над ботом: {streak}</div>', unsafe_allow_html=True)
