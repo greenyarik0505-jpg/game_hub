@@ -128,7 +128,7 @@ def run():
     <style>
     /* Center and restrict the game container */
     .main .block-container {
-        max-width: 480px !important;
+        max-width: 620px !important;
         margin: 0 auto !important;
         padding-left: 20px !important;
         padding-right: 20px !important;
@@ -145,7 +145,7 @@ def run():
     
     /* Align the 3x3 columns tightly and center them */
     div[data-testid="stHorizontalBlock"] {
-        max-width: 460px !important;
+        max-width: 600px !important;
         margin: 0 auto !important;
         gap: 8px !important;
     }
@@ -157,13 +157,13 @@ def run():
     
     /* Make only grid buttons (which are inside columns) rectangular */
     div[data-testid="column"] div[data-testid="stButton"] button {
-        width: 140px !important;
-        height: 75px !important;
+        width: 180px !important;
+        height: 100px !important;
         margin: 0 auto !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        font-size: 2rem !important;
+        font-size: 2.5rem !important;
         font-family: 'Space Grotesk', sans-serif !important;
         border-radius: 12px !important;
         background-color: var(--card-bg) !important;
