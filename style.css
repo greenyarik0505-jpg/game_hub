@@ -646,3 +646,164 @@ td {
     color: #e2e8f0;
 }
 
+/* --- Custom Category Tabs --- */
+.category-tabs-container {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-start;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 25px;
+}
+
+.cat-tab {
+    background: rgba(22, 28, 45, 0.35);
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none !important;
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.cat-tab:hover {
+    background: rgba(59, 130, 246, 0.08);
+    color: #ffffff;
+    border-color: rgba(59, 130, 246, 0.25);
+    transform: translateY(-2px);
+}
+
+.cat-tab.active-tab {
+    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%) !important;
+    color: #06070d !important;
+    font-weight: 700;
+    border-color: transparent !important;
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.25);
+}
+
+/* --- Theme-Specific Card Hover Glows --- */
+.game-card.card-clicker:hover {
+    border-color: rgba(6, 182, 212, 0.4) !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45), 0 0 30px rgba(6, 182, 212, 0.18);
+}
+.game-card.card-clicker:hover::after {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.5), rgba(59, 130, 246, 0.5)) !important;
+}
+.game-card.card-clicker:hover .play-action {
+    background: linear-gradient(95deg, #06b6d4 0%, #3b82f6 100%) !important;
+    color: #06070d !important;
+    border-color: transparent !important;
+    box-shadow: 0 6px 15px rgba(6, 182, 212, 0.3) !important;
+}
+
+.game-card.card-memory_match:hover {
+    border-color: rgba(236, 72, 153, 0.4) !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45), 0 0 30px rgba(236, 72, 153, 0.18);
+}
+.game-card.card-memory_match:hover::after {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.5), rgba(99, 102, 241, 0.5)) !important;
+}
+.game-card.card-memory_match:hover .play-action {
+    background: linear-gradient(95deg, #ec4899 0%, #6366f1 100%) !important;
+    color: #06070d !important;
+    border-color: transparent !important;
+    box-shadow: 0 6px 15px rgba(236, 72, 153, 0.3) !important;
+}
+
+.game-card.card-tic_tac_toe:hover {
+    border-color: rgba(59, 130, 246, 0.4) !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45), 0 0 30px rgba(59, 130, 246, 0.18);
+}
+.game-card.card-tic_tac_toe:hover::after {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.5), rgba(139, 92, 246, 0.5)) !important;
+}
+.game-card.card-tic_tac_toe:hover .play-action {
+    background: linear-gradient(95deg, #3b82f6 0%, #8b5cf6 100%) !important;
+    color: #06070d !important;
+    border-color: transparent !important;
+    box-shadow: 0 6px 15px rgba(59, 130, 246, 0.3) !important;
+}
+
+.game-card.card-sea_battle:hover {
+    border-color: rgba(16, 185, 129, 0.4) !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45), 0 0 30px rgba(16, 185, 129, 0.18);
+}
+.game-card.card-sea_battle:hover::after {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.5), rgba(6, 182, 212, 0.5)) !important;
+}
+.game-card.card-sea_battle:hover .play-action {
+    background: linear-gradient(95deg, #10b981 0%, #06b6d4 100%) !important;
+    color: #06070d !important;
+    border-color: transparent !important;
+    box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3) !important;
+}
+
+/* --- Achievements Widget --- */
+.user-achievements-card {
+    background: rgba(15, 23, 42, 0.35) !important;
+    border: 1px solid rgba(255, 255, 255, 0.04) !important;
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 35px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(25px);
+    transition: all 0.3s ease;
+}
+
+.user-achievements-card:hover {
+    border-color: rgba(59, 130, 246, 0.15) !important;
+    box-shadow: 0 15px 40px rgba(59, 130, 246, 0.06);
+}
+
+.achievement-pill {
+    background: rgba(255, 255, 255, 0.02);
+    padding: 12px 6px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.achievement-pill:hover {
+    background: rgba(255, 255, 255, 0.04);
+    transform: translateY(-2px);
+}
+
+.achievement-icon {
+    font-size: 1.4rem;
+    margin-bottom: 4px;
+}
+
+.achievement-label {
+    font-size: 0.7rem;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.achievement-val {
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: 'Space Grotesk', sans-serif;
+    margin-top: 2px;
+}
+
+.achievement-val.val-clicker { color: #06b6d4; }
+.achievement-val.val-ttt { color: #10b981; }
+.achievement-val.val-memory { color: #ec4899; }
+
+/* Highlight row of logged-in user in leaderboards */
+.current-user-row {
+    background-color: rgba(59, 130, 246, 0.06) !important;
+}
+
+.current-user-row td {
+    color: #ffffff !important;
+}
+

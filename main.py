@@ -332,21 +332,32 @@ if active_page == "menu":
     with col_main_grid:
         st.markdown('<h2 style="font-family:\'Space Grotesk\', sans-serif; font-size:1.6rem; color:#fff; margin-bottom: 20px;">🎮 Доступні ігри</h2>', unsafe_allow_html=True)
         
-        # Inject style to box search/category nicely
-        render_html("""
-        <style>
-        .filter-panel {
-            background: rgba(22, 28, 45, 0.25) !important;
-            padding: 15px 20px !important;
-            border-radius: 16px !important;
-            border: 1px solid rgba(255, 255, 255, 0.03) !important;
-            margin-bottom: 25px !important;
+        # Get category from query parameters if present, fallback to session state, then 'All'
+        if "cat" in query_params:
+            selected_cat = query_params["cat"]
+            st.session_state.selected_category = selected_cat
+        else:
+            selected_cat = st.session_state.get("selected_category", "All")
+
+        # Custom Category Tabs (HTML/CSS)
+        categories_map = {
+            "All": "🎮 Всі ігри",
+            "Arcade": "🕹️ Аркади",
+            "Board": "🎲 Настільні",
+            "Strategy": "🧠 Стратегії"
         }
-        </style>
-        """)
         
+        tabs_html = '<div class="category-tabs-container" style="margin-bottom: 20px;">'
+        for cat_id, cat_name in categories_map.items():
+            active_class = "active-tab" if selected_cat == cat_id else ""
+            tabs_html += f'<a href="/?page=menu&cat={cat_id}&user={active_user}" target="_self" class="cat-tab {active_class}">{cat_name}</a>'
+        tabs_html += '</div>'
+        
+        render_html(tabs_html)
+
+        # Filters Box (Search & Sort)
         st.markdown('<div class="filter-panel">', unsafe_allow_html=True)
-        col_search, col_cats = st.columns([1.1, 1.3])
+        col_search, col_sort = st.columns([2, 1])
         
         with col_search:
             search_query = st.text_input(
@@ -355,24 +366,18 @@ if active_page == "menu":
                 label_visibility="collapsed"
             )
             
-        with col_cats:
-            categories = ["All", "Arcade", "Board", "Strategy"]
-            if "selected_category" not in st.session_state:
-                st.session_state.selected_category = "All"
-                
-            cols = st.columns(len(categories))
-            for idx, cat in enumerate(categories):
-                is_active = (st.session_state.selected_category == cat)
-                btn_type = "primary" if is_active else "secondary"
-                if cols[idx].button(cat, key=f"btn_{cat}", type=btn_type, use_container_width=True):
-                    st.session_state.selected_category = cat
-                    st.rerun()
+        with col_sort:
+            sort_order = st.selectbox(
+                "Сортування",
+                options=["За замовчуванням", "Рейтинг ⭐", "Назва A-Z"],
+                index=0,
+                label_visibility="collapsed"
+            )
         st.markdown('</div>', unsafe_allow_html=True)
                     
         # Filter games
         filtered_games = []
         search_lower = search_query.lower()
-        selected_cat = st.session_state.selected_category
         
         for game in games:
             match_search = (
@@ -381,7 +386,6 @@ if active_page == "menu":
                 search_lower in game["description"].lower() or
                 any(search_lower in tag.lower() for tag in game.get("tags", []))
             )
-            # Handle categories (Broken category matches All only or explicitly if filtered)
             match_category = (selected_cat == "All" or game["category"] == selected_cat)
             
             if match_search and match_category:
@@ -389,6 +393,25 @@ if active_page == "menu":
                 
         # Load ratings
         ratings_db = load_ratings()
+        
+        # Calculate rating metrics for sorting
+        for game in filtered_games:
+            game_ratings = ratings_db.get(game["id"], [])
+            if game_ratings:
+                game["avg_rating"] = sum(game_ratings) / len(game_ratings)
+                game["rating_count"] = len(game_ratings)
+            else:
+                game["avg_rating"] = 0.0
+                game["rating_count"] = 0
+
+        # Sort filtered games
+        if sort_order == "Рейтинг ⭐":
+            filtered_games = sorted(filtered_games, key=lambda x: (x.get("status") == "broken", -x["avg_rating"], -x["rating_count"]))
+        elif sort_order == "Назва A-Z":
+            filtered_games = sorted(filtered_games, key=lambda x: (x.get("status") == "broken", x["title"].lower()))
+        else:
+            # Default sorting: active games first, broken games last
+            filtered_games = sorted(filtered_games, key=lambda x: x.get("status") == "broken")
                 
         # Render Games Grid
         if filtered_games:
@@ -447,10 +470,49 @@ if active_page == "menu":
             st.warning("Ігор не знайдено.")
 
     with col_leaderboard:
-        st.markdown('<h2 style="font-family:\'Space Grotesk\', sans-serif; font-size:1.6rem; color:#fff; margin-bottom: 20px;">🏆 Таблиця лідерів класу</h2>', unsafe_allow_html=True)
-        
         # Load all profiles
         all_profiles = load_profiles()
+        
+        # User Achievements Widget
+        user_stats = user_profile
+        coins = user_stats.get("clicker", {}).get("coins", 0.0)
+        ttt_wins = user_stats.get("tic_tac_toe", {}).get("wins", 0)
+        ttt_losses = user_stats.get("tic_tac_toe", {}).get("losses", 0)
+        mem_moves = user_stats.get("memory_match", {}).get("best_moves", 999)
+        mem_moves_str = str(mem_moves) if mem_moves < 999 else "немає"
+        
+        st.markdown('<h2 style="font-family:\'Space Grotesk\', sans-serif; font-size:1.6rem; color:#fff; margin-bottom: 20px;">👤 Мої досягнення</h2>', unsafe_allow_html=True)
+        
+        render_html(f"""
+        <div class="user-achievements-card">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                {get_avatar_html(active_user, size=46)}
+                <div>
+                    <div style="font-size: 0.75rem; color: #64748b; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Профіль гравця</div>
+                    <div style="font-size: 1.25rem; color: #fff; font-weight: 700; font-family: 'Space Grotesk', sans-serif;">{active_user}</div>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
+                <div class="achievement-pill">
+                    <div class="achievement-icon">🪙</div>
+                    <div class="achievement-label">Клікер</div>
+                    <div class="achievement-val val-clicker">{coins:.2f}</div>
+                </div>
+                <div class="achievement-pill">
+                    <div class="achievement-icon">⚔️</div>
+                    <div class="achievement-label">Хрестики</div>
+                    <div class="achievement-val val-ttt">{ttt_wins}W - {ttt_losses}L</div>
+                </div>
+                <div class="achievement-pill">
+                    <div class="achievement-icon">🧠</div>
+                    <div class="achievement-label">Меморі</div>
+                    <div class="achievement-val val-memory">{mem_moves_str}</div>
+                </div>
+            </div>
+        </div>
+        """)
+
+        st.markdown('<h2 style="font-family:\'Space Grotesk\', sans-serif; font-size:1.6rem; color:#fff; margin-bottom: 20px;">🏆 Таблиця лідерів класу</h2>', unsafe_allow_html=True)
         
         # Tabs for different leaderboards
         tab_clicker, tab_ttt, tab_memory = st.tabs(["🪙 Клікер", "❌ Tic-Tac-Toe", "🧠 Memory Match"])
@@ -459,8 +521,8 @@ if active_page == "menu":
             # Sort by Clicker Coins
             clicker_ranks = []
             for user, data in all_profiles.items():
-                coins = data.get("clicker", {}).get("coins", 0.0)
-                clicker_ranks.append((user, coins))
+                coins_val = data.get("clicker", {}).get("coins", 0.0)
+                clicker_ranks.append((user, coins_val))
             
             clicker_ranks = sorted(clicker_ranks, key=lambda x: x[1], reverse=True)[:10]
             
@@ -468,10 +530,17 @@ if active_page == "menu":
                 rows_html = ""
                 for idx, (user, val) in enumerate(clicker_ranks):
                     badge = "👑" if idx == 0 else "🥈" if idx == 1 else "🥉" if idx == 2 else f"{idx+1}"
+                    row_avatar = get_avatar_html(user, size=24)
+                    highlight_style = "style='color:#fff; font-weight:700;'" if user == active_user else ""
                     rows_html += f"""
-                    <tr>
+                    <tr class="{'current-user-row' if user == active_user else ''}">
                         <td style="padding: 10px; font-weight:bold; color:#f59e0b;">{badge}</td>
-                        <td style="padding: 10px;">{user}</td>
+                        <td style="padding: 10px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                {row_avatar}
+                                <span {highlight_style}>{user}</span>
+                            </div>
+                        </td>
                         <td style="padding: 10px; text-align:right; font-family:'Space Grotesk'; font-weight:600; color:#06b6d4;">🪙 {val:.2f}</td>
                     </tr>
                     """
@@ -493,22 +562,29 @@ if active_page == "menu":
             # Sort by Tic-Tac-Toe Wins
             ttt_ranks = []
             for user, data in all_profiles.items():
-                wins = data.get("tic_tac_toe", {}).get("wins", 0)
-                losses = data.get("tic_tac_toe", {}).get("losses", 0)
-                ttt_ranks.append((user, wins, losses))
+                wins_val = data.get("tic_tac_toe", {}).get("wins", 0)
+                losses_val = data.get("tic_tac_toe", {}).get("losses", 0)
+                ttt_ranks.append((user, wins_val, losses_val))
                 
             ttt_ranks = sorted(ttt_ranks, key=lambda x: x[1], reverse=True)[:10]
             
             if ttt_ranks:
                 rows_html = ""
-                for idx, (user, wins, losses) in enumerate(ttt_ranks):
+                for idx, (user, wins_val, losses_val) in enumerate(ttt_ranks):
                     badge = "👑" if idx == 0 else "🥈" if idx == 1 else "🥉" if idx == 2 else f"{idx+1}"
+                    row_avatar = get_avatar_html(user, size=24)
+                    highlight_style = "style='color:#fff; font-weight:700;'" if user == active_user else ""
                     rows_html += f"""
-                    <tr>
+                    <tr class="{'current-user-row' if user == active_user else ''}">
                         <td style="padding: 10px; font-weight:bold; color:#f59e0b;">{badge}</td>
-                        <td style="padding: 10px;">{user}</td>
-                        <td style="padding: 10px; text-align:center; font-family:'Space Grotesk'; font-weight:600; color:#10b981;">{wins}</td>
-                        <td style="padding: 10px; text-align:right; font-family:'Space Grotesk'; color:#64748b;">{losses}</td>
+                        <td style="padding: 10px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                {row_avatar}
+                                <span {highlight_style}>{user}</span>
+                            </div>
+                        </td>
+                        <td style="padding: 10px; text-align:center; font-family:'Space Grotesk'; font-weight:600; color:#10b981;">{wins_val}</td>
+                        <td style="padding: 10px; text-align:right; font-family:'Space Grotesk'; color:#64748b;">{losses_val}</td>
                     </tr>
                     """
                 
@@ -530,23 +606,30 @@ if active_page == "menu":
             # Sort by Memory Match Best Moves (Ascending, ignore default 999)
             mem_ranks = []
             for user, data in all_profiles.items():
-                best_moves = data.get("memory_match", {}).get("best_moves", 999)
-                best_time = data.get("memory_match", {}).get("best_time", 9999.0)
-                if best_moves < 999:
-                    mem_ranks.append((user, best_moves, best_time))
+                best_moves_val = data.get("memory_match", {}).get("best_moves", 999)
+                best_time_val = data.get("memory_match", {}).get("best_time", 9999.0)
+                if best_moves_val < 999:
+                    mem_ranks.append((user, best_moves_val, best_time_val))
                     
             mem_ranks = sorted(mem_ranks, key=lambda x: x[1])[:10]
             
             if mem_ranks:
                 rows_html = ""
-                for idx, (user, moves, duration) in enumerate(mem_ranks):
+                for idx, (user, moves_val, duration_val) in enumerate(mem_ranks):
                     badge = "👑" if idx == 0 else "🥈" if idx == 1 else "🥉" if idx == 2 else f"{idx+1}"
+                    row_avatar = get_avatar_html(user, size=24)
+                    highlight_style = "style='color:#fff; font-weight:700;'" if user == active_user else ""
                     rows_html += f"""
-                    <tr>
+                    <tr class="{'current-user-row' if user == active_user else ''}">
                         <td style="padding: 10px; font-weight:bold; color:#f59e0b;">{badge}</td>
-                        <td style="padding: 10px;">{user}</td>
-                        <td style="padding: 10px; text-align:center; font-family:'Space Grotesk'; font-weight:600; color:#ec4899;">{moves}</td>
-                        <td style="padding: 10px; text-align:right; font-family:'Space Grotesk'; color:#3b82f6;">{duration:.1f}s</td>
+                        <td style="padding: 10px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                {row_avatar}
+                                <span {highlight_style}>{user}</span>
+                            </div>
+                        </td>
+                        <td style="padding: 10px; text-align:center; font-family:'Space Grotesk'; font-weight:600; color:#ec4899;">{moves_val}</td>
+                        <td style="padding: 10px; text-align:right; font-family:'Space Grotesk'; color:#3b82f6;">{duration_val:.1f}s</td>
                     </tr>
                     """
                 
