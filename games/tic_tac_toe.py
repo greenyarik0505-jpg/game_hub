@@ -157,8 +157,8 @@ def run():
     
     /* Make only grid buttons (which are inside columns) rectangular */
     div[data-testid="column"] div[data-testid="stButton"] button {
-        width: 100% !important;
-        height: 60px !important;
+        width: 140px !important;
+        height: 75px !important;
         margin: 0 auto !important;
         display: flex !important;
         align-items: center !important;
