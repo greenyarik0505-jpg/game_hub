@@ -89,8 +89,11 @@ body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
 
 .hub-logo {
     max-height: 145px;
-    object-fit: contain;
-    filter: drop-shadow(0 4px 10px var(--shadow-color));
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    border: 3px solid var(--border-color);
+    box-shadow: 0 8px 24px var(--shadow-color);
+    object-fit: cover;
     animation: float 6s ease-in-out infinite;
 }
 
