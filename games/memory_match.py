@@ -5,12 +5,12 @@ from games.utils import get_player_profile, update_player_profile
 
 METADATA = {
     "id": "memory_match",
-    "title": "🧠 Cosmic Memory Match",
+    "title": "🧠 Memory Match",
     "author": "Команда Hub",
     "category": "Arcade",
-    "description": "Класична гра на тренування пам'яті. Знайдіть пари космічних об'єктів за найменшу кількість ходів!",
+    "description": "Класична гра на тренування пам'яті. Знайдіть пари однакових об'єктів за найменшу кількість ходів!",
     "image": "assets/memory_match.png",
-    "tags": ["Пам'ять", "Космос", "Навчальна"]
+    "tags": ["Пам'ять", "Навчальна"]
 }
 
 EMOJIS = ['🚀', '👽', '👾', '🪐', '🛸', '🛰️', '📡', '☄️']
@@ -67,15 +67,18 @@ def run():
         font-family: 'Outfit', sans-serif !important;
         border-radius: 14px !important;
         transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
-        background-color: rgba(22, 28, 45, 0.4) !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        background-color: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
     }
     
     /* Active/hover hover card effects */
     div[data-testid="column"] div[data-testid="stButton"] button:hover {
-        border-color: rgba(6, 182, 212, 0.4) !important;
-        transform: scale(1.03) !important;
-        box-shadow: 0 8px 16px rgba(6, 182, 212, 0.1) !important;
+        border-color: #3b82f6 !important;
+        transform: scale(1.02) !important;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1) !important;
+        background-color: #f8fafc !important;
     }
     
     /* Distinct styling for revealed card backs and faces */
@@ -83,8 +86,8 @@ def run():
     </style>
     """, unsafe_allow_html=True)
 
-    st.title("🧠 Cosmic Memory Match")
-    st.write("Знайдіть всі 8 пар однакових космічних об'єктів!")
+    st.title("🧠 Memory Match")
+    st.write("Знайдіть всі 8 пар однакових об'єктів!")
     
     # Load profile data
     username = st.session_state.get("current_user", "Гість")

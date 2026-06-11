@@ -4,7 +4,7 @@ from games.utils import get_player_profile, update_player_profile
 
 METADATA = {
     "id": "tic_tac_toe",
-    "title": "🎮 Neon Tic-Tac-Toe",
+    "title": "🎮 Tic-Tac-Toe",
     "author": "Команда Hub",
     "category": "Board",
     "description": "Класична гра 'Хрестики-Нулики' проти розумного та непередбачуваного ШІ.",
@@ -106,17 +106,18 @@ def run():
         font-size: 3rem !important;
         font-family: 'Space Grotesk', sans-serif !important;
         border-radius: 16px !important;
-        background-color: rgba(255, 255, 255, 0.03) !important;
-        border: 1px solid rgba(255, 255, 255, 0.06) !important;
-        color: #ffffff !important;
+        background-color: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
         transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
     }
     
     div[data-testid="column"] div[data-testid="stButton"] button:hover {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(6, 182, 212, 0.12)) !important;
-        border-color: rgba(59, 130, 246, 0.5) !important;
-        transform: scale(1.04) !important;
-        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15) !important;
+        background: #f8fafc !important;
+        border-color: #3b82f6 !important;
+        transform: scale(1.02) !important;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1) !important;
     }
     
     div[data-testid="column"] div[data-testid="stButton"] button:active {
@@ -125,8 +126,8 @@ def run():
     </style>
     """, unsafe_allow_html=True)
 
-    st.title("🎮 Neon Tic-Tac-Toe")
-    st.write("Play against the Neon AI! Can you beat it?")
+    st.title("🎮 Tic-Tac-Toe")
+    st.write("Play against the AI! Can you beat it?")
     
     # Load profile data
     username = st.session_state.get("current_user", "Гість")
@@ -148,7 +149,7 @@ def run():
     # Display scores from profile
     col1, col2, col3 = st.columns(3)
     col1.metric("Ви перемог (X)", ttt_stats["wins"])
-    col2.metric("Neon AI (O)", ttt_stats["losses"])
+    col2.metric("AI (O)", ttt_stats["losses"])
     col3.metric("Нічиї", ttt_stats["ties"])
     
     st.write("---")
@@ -206,7 +207,7 @@ def run():
         if winner == "X":
             st.success("🎉 Ви перемогли! Вітаємо!")
         elif winner == "O":
-            st.error("💀 ШІ Neon переміг. Спробуйте ще раз!")
+            st.error("💀 ШІ переміг. Спробуйте ще раз!")
         else:
             st.info("🤝 Нічия!")
             

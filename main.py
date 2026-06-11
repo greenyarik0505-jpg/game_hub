@@ -33,13 +33,6 @@ def render_html(html_str):
     cleaned = re.sub(r'\s+', ' ', cleaned)
     st.markdown(cleaned, unsafe_allow_html=True)
 
-# Render background floating ambient orbs globally
-render_html("""
-<div class="bg-orb orb-1"></div>
-<div class="bg-orb orb-2"></div>
-<div class="bg-orb orb-3"></div>
-""")
-
 # Dynamic Game Scanner (No games.json needed)
 def scan_games():
     games_list = []
@@ -159,30 +152,30 @@ def get_game_cover_html(game):
     game_id = game["id"]
     FALLBACKS = {
         "tic_tac_toe": {
-            "gradient": "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+            "gradient": "linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)",
             "emoji": "❌⭕"
         },
         "clicker": {
-            "gradient": "linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)",
+            "gradient": "linear-gradient(135deg, #ecfeff 0%, #cffafe 100%)",
             "emoji": "🪙"
         },
         "memory_match": {
-            "gradient": "linear-gradient(135deg, #6366f1 0%, #ec4899 100%)",
+            "gradient": "linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)",
             "emoji": "🧠"
         },
         "template": {
-            "gradient": "linear-gradient(135deg, #10b981 0%, #06b6d4 100%)",
+            "gradient": "linear-gradient(135deg, #f0fdf4 0%, #bbf7d0 100%)",
             "emoji": "💻"
         }
     }
     fallback = FALLBACKS.get(game_id, {
-        "gradient": "linear-gradient(135deg, #ef4444 0%, #f59e0b 100%)" if game.get("status") == "broken" else "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
+        "gradient": "linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)" if game.get("status") == "broken" else "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
         "emoji": "⚠️" if game.get("status") == "broken" else "🎮"
     })
     
     return f"""
     <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: {fallback['gradient']};">
-        <div class="game-cover-fallback">{fallback['emoji']}</div>
+        <div class="game-cover-fallback" style="font-size: 3rem;">{fallback['emoji']}</div>
     </div>
     """
 
